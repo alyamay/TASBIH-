@@ -9,7 +9,8 @@
 |-----------|-----|
 | Nama      | Alya Maysa S |
 | NIM       | 230605110007 |
-| Kelas     | Praktikum Mobile (E) |
+| Kelas Praktikum    | Praktikum Pemrograman Mobile (E) |
+| Kelas Teori | Pemrograman Mobile (B) |
 
 ---
 
