@@ -1,0 +1,36 @@
+{
+  "doa": [
+    {
+      "judul": "Doa Sebelum Tidur",
+      "arab": "بِاسْمِكَ اللّٰهُمَّ أَحْيَا وَبِاسْمِكَ أَمُوْتُ",
+      "latin": "Bismika Allahumma ahya wa bismika amut",
+      "arti": "Dengan nama-Mu ya Allah aku hidup dan dengan nama-Mu aku mati."
+    },
+    {
+      "judul": "Doa Sebelum Makan",
+      "arab": "اللّٰهُمَّ بَارِكْ لَنَا فِيْمَا رَزَقْتَنَا...",
+      "latin": "Allahumma barik lana fima razaqtana...",
+      "arti": "Ya Allah, berkahilah rezeki yang Engkau berikan kepada kami..."
+    }
+  ],
+  "quotes": [
+    "Jangan bersedih, Allah bersama kita.",
+    "Sabar adalah kunci dari ketenangan hati.",
+    "Setiap kesulitan pasti ada kemudahan.",
+    "Dzikir adalah pelipur lara bagi hati yang lelah."
+  ],
+  "tasbih": [
+    {
+      "nama": "Istighfar"
+    },
+    {
+      "nama": "Subhanallah"
+    },
+    {
+      "nama": "Alhamdulillah"
+    },
+    {
+      "nama": "Allahu Akbar"
+    }
+  ]
+}
