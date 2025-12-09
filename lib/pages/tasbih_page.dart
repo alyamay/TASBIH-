@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/tasbih_model.dart';
+import '../../utils/theme_manager.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TasbihPage extends StatefulWidget {
   final Tasbih tasbih;
@@ -13,47 +16,75 @@ class TasbihPage extends StatefulWidget {
 
 class _TasbihPageState extends State<TasbihPage> {
   late int count;
+  bool isSaving = false;
 
   @override
   void initState() {
     super.initState();
     count = widget.tasbih.count;
-    _saveCount();
-    _saveLastTasbih();
-  }
 
-  Future<void> _saveCount() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('tasbih_${widget.tasbih.nama}', count);
+    _saveLastTasbih();
+    _saveLocalCount();
   }
 
   Future<void> _saveLastTasbih() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('last_tasbih', widget.tasbih.nama);
+    prefs.setString('last_tasbih', widget.tasbih.nama);
+  }
+
+  Future<void> _saveLocalCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setInt('tasbih_${widget.tasbih.nama}', count);
+  }
+
+  // 🔥 Save ke Firebase (Cloud Firestore)
+  Future<void> _saveToFirebase() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    setState(() => isSaving = true);
+
+    try {
+      final docRef = FirebaseFirestore.instance
+          .collection("users")
+          .doc(user.uid);
+
+      await docRef.set({
+        "tasbihCounts": {widget.tasbih.nama: count},
+      }, SetOptions(merge: true));
+    } catch (e) {
+      print("Gagal simpan Firebase: $e");
+    }
+
+    setState(() => isSaving = false);
   }
 
   void _increment() {
-    setState(() {
-      count++;
-    });
-    _saveCount();
+    setState(() => count++);
+    _saveLocalCount();
+    _saveToFirebase();
   }
 
   void _reset() {
-    setState(() {
-      count = 0;
-    });
-    _saveCount();
+    setState(() => count = 0);
+    _saveLocalCount();
+    _saveToFirebase();
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ThemeManager.of(context).isDark.value;
+
+    final bg = isDark ? const Color(0xFF121212) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF230E4E);
+    final headerIcon = isDark ? Colors.white : Colors.black87;
+
     final screen = MediaQuery.of(context).size;
     final w = screen.width;
     final h = screen.height;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: bg,
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.symmetric(
@@ -63,53 +94,53 @@ class _TasbihPageState extends State<TasbihPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // 🔹 Header
+              // HEADER
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(
+                    child: Icon(
                       Icons.arrow_back_ios_new_rounded,
-                      color: Colors.black87,
+                      color: headerIcon,
                     ),
                   ),
                   Text(
-                    "Tasbih+",
+                    "TASBIH+",
                     style: GoogleFonts.poppins(
                       color: const Color(0xFF4FB7B3),
                       fontSize: w * 0.065,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(width: 30), // biar center
+                  const SizedBox(width: 30),
                 ],
               ),
 
               SizedBox(height: h * 0.05),
 
-              // 🔹 Nama Tasbih
+              // Judul Tasbih
               Text(
                 widget.tasbih.nama,
                 style: GoogleFonts.poppins(
-                  color: const Color(0xFF230E4E),
+                  color: textColor,
                   fontSize: w * 0.07,
                   fontWeight: FontWeight.w600,
                 ),
               ),
 
-              SizedBox(height: h * 0.04),
+              SizedBox(height: h * 0.1),
 
-              // 🔹 Circle Counter mirip di HomePage
+              // Circle Counter
               Stack(
                 alignment: Alignment.center,
                 children: [
                   Container(
                     width: w * 0.6,
                     height: w * 0.6,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: const LinearGradient(
+                      gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [Color(0xFFA8FBD3), Color(0xFF4FB7B3)],
@@ -127,9 +158,9 @@ class _TasbihPageState extends State<TasbihPage> {
                 ],
               ),
 
-              SizedBox(height: h * 0.06),
+              SizedBox(height: h * 0.1),
 
-              // 🔹 Tombol Tambah & Reset
+              // Tombol Tambah & Reset
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -146,7 +177,7 @@ class _TasbihPageState extends State<TasbihPage> {
                       ),
                     ),
                     child: Text(
-                      "Tambah",
+                      isSaving ? "..." : "Tambah",
                       style: GoogleFonts.poppins(
                         color: Colors.white,
                         fontSize: 16,
@@ -168,7 +199,7 @@ class _TasbihPageState extends State<TasbihPage> {
                       ),
                     ),
                     child: Text(
-                      "Reset",
+                      isSaving ? "..." : "Reset",
                       style: GoogleFonts.poppins(
                         color: Colors.white,
                         fontSize: 16,

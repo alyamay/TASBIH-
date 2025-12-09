@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "47534430350",
+    "project_id": "tasbihplus-baf68",
+    "storage_bucket": "tasbihplus-baf68.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:47534430350:android:be4fdd72cb615bee4dd1df",
+        "android_client_info": {
+          "package_name": "com.example.project"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD1GcNf89-2YLO8uDf4b9n6HMkhlc89e1w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+
 import '../../models/doa_model.dart';
-import '../../widgets/bottom_nav.dart';
-import 'doa_page.dart';
+import '../../utils/theme_manager.dart';
 
 class DoaListPage extends StatefulWidget {
   const DoaListPage({super.key});
@@ -17,28 +17,55 @@ class _DoaListPageState extends State<DoaListPage> {
   List<Doa> allDoa = [];
   List<Doa> filteredDoa = [];
   final TextEditingController _searchController = TextEditingController();
-  final int currentIndex = 1;
+
+  // **[PENAMBAHAN 1]: Variabel State untuk Loading**
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadDoaData();
+    _loadDoaFromApi();
     _searchController.addListener(_filterSearch);
   }
 
-  Future<void> _loadDoaData() async {
-    final data = await rootBundle.loadString('lib/data/dummy_data.json');
-    final jsonResult = json.decode(data);
+  // =====================================================
+  // LOAD API
+  // =====================================================
+  Future<void> _loadDoaFromApi() async {
+    const url = "https://open-api.my.id/api/doa";
 
-    final List doaList = jsonResult['doa'] ?? [];
-    setState(() {
-      allDoa = doaList.map((e) => Doa.fromJson(e)).toList();
-      filteredDoa = allDoa;
-    });
+    try {
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final List data = json.decode(response.body);
+
+        setState(() {
+          allDoa = data.map((e) => Doa.fromApi(e)).toList();
+          filteredDoa = allDoa;
+          // Set isLoading menjadi false setelah data berhasil dimuat
+          isLoading = false;
+        });
+      } else {
+        print("API Error: ${response.statusCode}");
+        setState(() {
+          isLoading = false; // Jika error, hentikan loading
+        });
+      }
+    } catch (e) {
+      print("Load API error: $e");
+      setState(() {
+        isLoading = false; // Jika error, hentikan loading
+      });
+    }
   }
 
+  // =====================================================
+  // SEARCH FILTER
+  // =====================================================
   void _filterSearch() {
     final query = _searchController.text.toLowerCase();
+
     setState(() {
       filteredDoa = allDoa
           .where((d) => d.judul.toLowerCase().contains(query))
@@ -54,34 +81,39 @@ class _DoaListPageState extends State<DoaListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final screen = MediaQuery.of(context).size;
-    final double w = screen.width;
+    final isDark = ThemeManager.of(context).isDark.value;
+
+    final bgColor = isDark ? const Color(0xFF121212) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF230E4E);
+    final searchBg = isDark ? const Color(0x33FFFFFF) : const Color(0x198789A3);
+    final itemBg = isDark ? const Color(0x22FFFFFF) : const Color(0x198789A3);
+    final primaryColor = const Color(0xFF4FB7B3); // Warna utama untuk loading
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: bgColor,
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: w * 0.06, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
+              // HEADER
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   GestureDetector(
                     onTap: () =>
                         Navigator.pushReplacementNamed(context, '/home'),
-                    child: const Icon(
+                    child: Icon(
                       Icons.arrow_back_ios_new_rounded,
-                      color: Colors.black87,
+                      color: textColor,
                       size: 20,
                     ),
                   ),
                   Text(
                     "Daily Dua",
                     style: GoogleFonts.poppins(
-                      color: const Color(0xFF4FB7B3),
+                      color: primaryColor,
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
                     ),
@@ -89,13 +121,14 @@ class _DoaListPageState extends State<DoaListPage> {
                   const SizedBox(width: 20),
                 ],
               ),
+
               const SizedBox(height: 15),
 
-              // Search Bar
+              // SEARCH BAR
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
-                  color: const Color(0x198789A3),
+                  color: searchBg,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
@@ -105,10 +138,13 @@ class _DoaListPageState extends State<DoaListPage> {
                     Expanded(
                       child: TextField(
                         controller: _searchController,
+                        style: TextStyle(color: textColor),
+                        // **[PENTING]: Nonaktifkan TextField saat loading**
+                        enabled: !isLoading,
                         decoration: InputDecoration(
                           hintText: "Cari doa...",
                           hintStyle: GoogleFonts.poppins(
-                            color: Colors.grey[600],
+                            color: isDark ? Colors.white60 : Colors.grey[600],
                             fontSize: 14,
                           ),
                           border: InputBorder.none,
@@ -118,16 +154,26 @@ class _DoaListPageState extends State<DoaListPage> {
                   ],
                 ),
               ),
+
               const SizedBox(height: 20),
 
-              // List Doa
+              // **[PERUBAHAN UTAMA]: Kontrol Tampilan berdasarkan isLoading**
               Expanded(
-                child: filteredDoa.isEmpty
+                child: isLoading
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          color: primaryColor, // Menggunakan warna tema
+                        ),
+                      )
+                    : filteredDoa.isEmpty
                     ? Center(
                         child: Text(
-                          "Tidak ada doa ditemukan",
+                          // Perbarui teks ini agar lebih spesifik jika setelah loading
+                          _searchController.text.isNotEmpty
+                              ? "Tidak ada doa yang cocok dengan pencarian."
+                              : "Tidak ada doa ditemukan (API mungkin kosong).",
                           style: GoogleFonts.poppins(
-                            color: Colors.grey[600],
+                            color: isDark ? Colors.white70 : Colors.grey[600],
                             fontSize: 14,
                           ),
                         ),
@@ -142,7 +188,7 @@ class _DoaListPageState extends State<DoaListPage> {
                               Navigator.pushNamed(
                                 context,
                                 '/doa',
-                                arguments: {'judul': doa.judul},
+                                arguments: {'id': doa.id},
                               );
                             },
                             child: Container(
@@ -152,14 +198,14 @@ class _DoaListPageState extends State<DoaListPage> {
                                 vertical: 18,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0x198789A3),
+                                color: itemBg,
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               child: Text(
                                 doa.judul,
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.poppins(
-                                  color: const Color(0xFF4FB7B3),
+                                  color: primaryColor,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
                                 ),

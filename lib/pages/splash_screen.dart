@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -32,19 +33,14 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Setelah 2.5 detik -> auto ke HomePage dengan fade transition
     Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            transitionDuration: const Duration(milliseconds: 800),
-            pageBuilder: (_, animation, __) {
-              return FadeTransition(
-                opacity: animation,
-                child: const _HomeRedirect(),
-              );
-            },
-          ),
-        );
+      if (!mounted) return;
+
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user == null) {
+        Navigator.pushReplacementNamed(context, '/login');
+      } else {
+        Navigator.pushReplacementNamed(context, '/home');
       }
     });
   }
@@ -53,6 +49,18 @@ class _SplashScreenState extends State<SplashScreen>
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  void checkLogin() async {
+    await Future.delayed(const Duration(seconds: 2));
+
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      Navigator.pushReplacementNamed(context, '/login');
+    } else {
+      Navigator.pushReplacementNamed(context, '/home');
+    }
   }
 
   @override
@@ -162,19 +170,5 @@ class _SplashScreenState extends State<SplashScreen>
         ),
       ),
     );
-  }
-}
-
-/// 🔹 Halaman penunjuk agar fade berhasil & tidak error
-class _HomeRedirect extends StatelessWidget {
-  const _HomeRedirect({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    // langsung redirect tanpa build loop
-    Future.microtask(() {
-      Navigator.pushReplacementNamed(context, '/home');
-    });
-    return const SizedBox.shrink();
   }
 }
